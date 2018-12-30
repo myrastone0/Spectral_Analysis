@@ -6,6 +6,14 @@ Telescope.
 
 Data Retrieval
 --------------
+Jython scripts to retrieve data from the Herschel Science Archive (HSA).
+Observations were made with the Photoconductor Array Camera and 
+Spectrometer (PACS) onboard the Herschel Space Telescope. 
+Scripts are to be run inside the Herschel Interactive Processing Environment (HIPE).
+They can retrieve the rebinned Herschel Science Center (HSC) pipeline
+processed data products of native resolution (9.4 x 9.4 arcsecond spaxels),
+or they can interpolate to smaller spaxel sizes. Data cubes are saved to FITS files.
+
 
 
 Spectrum Fitting
@@ -25,3 +33,4 @@ Modeling
 Visualizations
 --------------
 - create RGB images from various wavelength observations
+![Alt text](m82/contPlots/1342186798_m82_oiii88_contSub.pdf?raw=true "Title")

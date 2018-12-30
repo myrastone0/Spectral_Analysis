@@ -8,10 +8,10 @@ import os
 
 # Conserve the flux when interpolating to smaller sized spaxels?
 conserveFlux = True
-# Size of the output spaxel.
-spaxelSize = 6      ## arcseconds
+# Size of the output spaxel in arcsecond.
+spaxelSize = 6
 # Labeling variable.
-arcsec = '6arc'
+arcsec = str(spaxelSize)+'arc'
 
 # Top working directory.
 topPath = '/Volumes/QbertPrimary/umdResearch/adapProposalNearby/'
@@ -57,12 +57,12 @@ for line in paramListLines:
 
         # ----------------------------- #
         # Get the rebinned product cube #
-        ##corresponding to the camera.  #
+        # corresponding to the camera.  #
         # ----------------------------- #
         if camera == 'blue':
             productCube = 'HPS3DRB'
-            ## The "slicedCubes" are necessary to build the wavelength grid,
-            ## the fluxes therein will not be used for anything:
+            # The "slicedCubes" are necessary to build the wavelength grid,
+            # the fluxes therein will not be used for anything:
             slicedCubes=obs.refs["level1"].product.refs["HPS3DB"].product
         if camera == 'red':
             productCube = 'HPS3DRR'
