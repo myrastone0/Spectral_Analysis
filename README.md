@@ -33,4 +33,6 @@ Modeling
 Visualizations
 --------------
 - create RGB images from various wavelength observations
+<embed src="https://raw.githubusercontent.com/myrastone0/Spectral_Analysis/atomicLines/m82/contPlots/1342186798_m82_oiii88_contSub.pdf" width="500" height="375" 
+ type='application/pdf'>
 ![alt text](https://raw.githubusercontent.com/myrastone0/Spectral_Analysis/atomicLines/m82/contPlots/1342186798_m82_oiii88_contSub.pdf)
