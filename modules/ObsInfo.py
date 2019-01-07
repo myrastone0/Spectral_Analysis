@@ -157,7 +157,7 @@ class ObsInfo():
         self.dataCrop = self.originalHdu['image'].data[self.minIdx:self.maxIdx,:,:]
 
 
-    def updateHdr(self, fitsFile, restWave, cunit3='KM/S', beamSize=0.0027, saveFile=None):
+    def updateHdr(self, fitsFile, restWave, cunit3='KM/S', beamSize=9.5, saveFile=None):
         """
             Convert the data to float32 and replace -9999 values with 0.
 
@@ -200,11 +200,8 @@ class ObsInfo():
         self.hdr['CDELT3'] = cdelt3
         self.hdr['CUNIT3'] = cunit3
 
-        # Add PACS beam information in units of degrees.
-        self.hdr['BMAJ'] = beamSize
-        self.hdr['BMIN'] = beamSize
+        # Add PACS beam information in units of arcsec.
         self.hdr['BEAMFWHM'] = beamSize
-        self.hdr['BPA'] = self.originalHdu[0].header['POSANGLE']
 
         # Add object name
         self.hdr['OBJECT'] = self.objectName
