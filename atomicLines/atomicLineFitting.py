@@ -48,26 +48,28 @@ from ObsInfo import ObsInfo
 
 
 # Size of the interpolated spaxels
-arcsec = '6arc'
+arcsec = '1arc'
 # Number of Gaussian components to fit to the line profile.
 nComps = 2
+
+topDir = '/Volumes/QbertPrimary/umdResearch/adapProposalNearby/'
 
 # ----------------------------------------- #
 # Necessary parameter file and dictionaries #
 # ----------------------------------------- #
 # Dictionary of galaxy properties
-objDictName = 'objectInfoDict.pkl'
+objDictName = topDir + 'objectInfoDict.pkl'
 # Dictionary of emission line properties.
-lineDict = loadDict('emiLineDict.pkl')
+lineDict = loadDict(topDir + 'emiLineDict.pkl')
 # Text file of line fitting parameters.
-paramFileName = 'fittingParameters.txt'
+paramFileName = topDir + 'fittingParametersV4.txt'
 
 
 # -------------------------------------------------- #
 # Read in the parameter file containing line profile #
 # velocity limits and continuum fitting information. #
 # -------------------------------------------------- #
-paramFileData = np.genfromtxt(paramFileName, dtype = None,
+paramFileData = np.genfromtxt(paramFileName, dtype = None, 
                               autostrip = True, names = True, encoding=None)
 
 
@@ -76,7 +78,7 @@ for x in range(len(paramFileData)):
     # Get the galaxy and line information. #
     # ------------------------------------ #
     obsInfo = ObsInfo(x, paramFileName, objDictName)
-
+    
     # Name of the emission line.
     lineName = paramFileData['lineNameShort'][x]
     # Rest wavelength of the emission line.
@@ -94,9 +96,11 @@ for x in range(len(paramFileData)):
                    +lineDict[lineName]['texLabel'])
     # Base for the object's file names.
     objectNameBase = (str(obsInfo.obsId)+'_'+obsInfo.objectName+'_'+lineName)
-    # Base path to the object's directories.
-    objectPathBase = (obsInfo.objectName+'/')
+    # Base path to the object's directories.    
+    objectPathBase = (topDir + 'pySpecKitCube/run4/' + obsInfo.objectName + '/' + arcsec + '/')
     if (not os.path.exists(objectPathBase)):os.makedirs(objectPathBase)
+
+
 
 
     # --------------------------------- #
@@ -117,18 +121,26 @@ for x in range(len(paramFileData)):
     # ---------------------------------------------- #
     # Open and read in FITS file of the observation. #
     # ---------------------------------------------- #
-    fitsFile = (objectNameBase+'_Hipe_15_0_3244_eqInter'+arcsec+'.fits')
-    fitsHdu = fits.open(fitsFile)
+    if arcsec == '6arc':
+        hipeFitsDir = topDir + 'pySpecKitCube/specInterMixed/' + arcsec + '/'
+    else:
+        hipeFitsDir = topDir + 'pySpecKitCube/specInterFitsFiles/equiInter' + arcsec + '/'
 
+    fitsFile = hipeFitsDir + objectNameBase+'_Hipe_15_0_3244_eqInter'+arcsec+'.fits'
+    fitsHdu = fits.open(fitsFile)
+    
     # Convert spectral axis wavelengths to velocities and correct for redshift.
     obsInfo.computeVels(fitsFile, restWave, velCorr=True)
-
+    
     # Crop the fluxes and velocities using velMin and velMax from parameter file.
     vels = obsInfo.velsCorr[obsInfo.minIdx:obsInfo.maxIdx]
     data = obsInfo.originalHdu['image'].data[obsInfo.minIdx:obsInfo.maxIdx,:,:]
 
     # Number of rows, columns, and fluxes in the cropped 3D data array.
     nRows,nCols,nFluxes = data.shape[2], data.shape[1], data.shape[0]
+    
+    minProfIdx = (np.abs(vels - (obsInfo.profileMin))).argmin()
+    maxProfIdx = (np.abs(vels - (obsInfo.profileMax))).argmin()
 
 
     # ------------- #
@@ -148,7 +160,7 @@ for x in range(len(paramFileData)):
     falseMask = maskFalse(data=data)
     # Mask the profile range. NaNs are TRUE
     profileMask = maskProfile(data=trueMask['maskedData'],xarr=vels,
-                              minProfIdx=obsInfo.minProfIdx,maxProfIdx=obsInfo.maxProfIdx)
+                              minProfIdx=minProfIdx,maxProfIdx=maxProfIdx)
     # Build mask with a WCS that is compatible with SpectralCube.
     # NaNs are FALSE.
     cubeMask = BooleanArrayMask(falseMask['mask'],pacsWcs)
@@ -168,7 +180,7 @@ for x in range(len(paramFileData)):
     # Fit the continuum with a polynomial and subtract from fluxes. #
     # ------------------------------------------------------------- #
     # The edges of the spectrum and the velocity region
-    # of the line profile is masked as TRUE. Data which
+    # of the line profile is masked as TRUE. Data which 
     # is to be fit as the continuum is masked as FALSE.
     # Flux of the fitted continuum
     contFluxCube=getContinuumFlux(profileMask['maskedData'],
@@ -206,7 +218,6 @@ for x in range(len(paramFileData)):
     # -------------------------------- #
     # Set up for line profile fitting. #
     # -------------------------------- #
-
     # Build the guesses array
     gc = buildGuessCube((nCols,nRows),
                         contSubCube = contSubCube,
@@ -231,7 +242,7 @@ for x in range(len(paramFileData)):
     # Enforce the min/max parameter limits?
     minLimits = [T,T,T]*nComps
     maxLimits = [F,T,T]*nComps
-
+    
     # Send the guesses to pyCube
     pyCube.parcube = guessCube
 
@@ -259,13 +270,15 @@ for x in range(len(paramFileData)):
                             validPixels = validPixels,
                             velMin = obsInfo.velMin,
                             velMax = obsInfo.velMax)
-    if obsInfo.objectName == 'ngc1068':
+    if nComps == 3:
         comp3 = calcGaussFluxes(gaussParams = pyCube.parcube[6:9,:,:],
                                 validPixels = validPixels,
                                 velMin = obsInfo.velMin,
                                 velMax = obsInfo.velMax)
+        modelFluxes = comp1 + comp2 + comp3
     else:
         comp3 = None
+        modelFluxes = comp1 + comp2
 
 
     # ------------------------------------------------------------- #
@@ -311,9 +324,47 @@ for x in range(len(paramFileData)):
     # for the instrumental resolution. #
     # -------------------------------- #
     instrSigma = lineDict[lineName]['specRes'] / 2.355
-
+    
     w1Corr = np.sqrt(np.square(w1)-np.square(instrSigma))
     w2Corr = np.sqrt(np.square(w2)-np.square(instrSigma * 2.))
+
+
+    # ----------------------------- #
+    # Jankie way to compute errors. #
+    # ----------------------------- #
+    from functionThings import gaussFunc
+
+    # Empty array which will hold the fluxes.
+    gaussFluxes1 = np.zeros((len(vels),nCols,nRows))
+    # Compute the fluxes only for pixels which are valid.
+    for coord in validPixels:
+        col,row = coord[0], coord[1]
+        for ii in range(len(vels)):
+            gaussFluxes1[ii,col,row] = gaussFunc(vels[ii],pyCube.parcube[0:3,col,row])
+
+    # Empty array which will hold the fluxes.
+    gaussFluxes2 = np.zeros((len(vels),nCols,nRows))
+    # Compute the fluxes only for pixels which are valid.
+    for coord in validPixels:
+        col,row = coord[0], coord[1]
+        for ii in range(len(vels)):
+            gaussFluxes2[ii,col,row] = gaussFunc(vels[ii],pyCube.parcube[3:6,col,row])
+
+    if nComps == 3:
+        # Empty array which will hold the fluxes.
+        gaussFluxes3 = np.zeros((len(vels),nCols,nRows))
+        # Compute the fluxes only for pixels which are valid.
+        for coord in validPixels:
+            col,row = coord[0], coord[1]
+            for ii in range(len(vels)):
+                gaussFluxes3[ii,col,row] = gaussFunc(vels[ii],pyCube.parcube[6:9,col,row])
+        gaussSums = gaussFluxes1 + gaussFluxes2 +gaussFluxes3
+    else:
+        gaussSums = gaussFluxes1 + gaussFluxes2
+
+    res = gaussSums - contSubCube
+    aveErr = sum( res / len(vels) )
+    rms = np.sqrt( np.sum(res**2., axis=0) / len(vels) )
 
 
     # ------------------------------------------------------ #
@@ -323,31 +374,31 @@ for x in range(len(paramFileData)):
                              'prefix':'flux',
                              'unit': r'Jy km s$^{-1}$',
                              'subPlotId': 1},
-                    'v16':  {'image':velDict['v16']['image'],
-                             'prefix':'v16',
-                             'unit': r'km s$^{-1}$',
-                             'subPlotId': 2},
                     'v50':  {'image':velDict['v50']['image'],
                              'prefix':'v50',
                              'unit': r'km s$^{-1}$',
-                             'subPlotId': 3},
+                             'subPlotId': 2},
                     'v84':  {'image':velDict['v84']['image'],
                              'prefix':'v84',
                              'unit': r'km s$^{-1}$',
-                             'subPlotId': 4},
+                             'subPlotId': 3},
                     'wAsym':{'image':wAsym,
                              'prefix':'wAsym',
                              'unit': r'km s$^{-1}$',
-                             'subPlotId': 5},
+                             'subPlotId': 4},
                     'w1':   {'image':w1Corr,
                              'prefix':'w1',
                              'unit': r'km s$^{-1}$',
-                             'subPlotId': 6},
+                             'subPlotId': 5},
                     'w2':   {'image':w2Corr,
                              'prefix':'w2',
                              'unit': r'km s$^{-1}$',
-                             'subPlotId': 7},
-                    }
+                             'subPlotId': 6},
+                    'rms':  {'image':rms,
+                             'prefix':'rms',
+                             'unit': r'Jy km s$^{-1}$',
+                             'subPlotId': 7}
+                   }
 
 
     # ------------------------------------------ #
@@ -360,51 +411,55 @@ for x in range(len(paramFileData)):
                   fitsHdu,propertyDict[key]['prefix'])
     # Append an image HDU of the fitted gaussian parameters
     createHdu(pyCube.parcube,fitsHdu,'gaussParam')
+    # Append fitted emission line model.
+    createHdu(np.ma.filled(modelFluxes,0),fitsHdu, 'modelFluxes')
     # Append an image HDU of the continuum-subtracted fluxes.
-    createHdu(np.ma.filled(contSubCube,0),fitsHdu, 'contSubFluxes')
+    createHdu(np.ma.filled(contSubCube,0),fitsHdu, 'contSubCube')
     # Append an image HDU of fitted continuum fluxes.
     createHdu(np.ma.filled(contFluxesMasked,0),fitsHdu, 'fittedContFluxes')
-
+    # Append the cropped redshift corrected velocities.
+    createHdu(vels,fitsHdu,'zCorrVels')
 
     # Save the HDU updates to a new file.
     fitsHdu.writeto(fitsSavePath + objectNameBase + '.fits',overwrite=True)
 
 
-    # -------------------------- #
-    # Plot the fitted continuum. #
-    # -------------------------- #
-    contFitPdfName = contSavePath + objectNameBase + '_contFit.pdf'
-    plotSpectra(data = data,
-                contFlux = contFluxesMasked,
-                maskedData = profileMask['maskedData'],
-                xarr = vels,
-                velMin = obsInfo.velMin,
-                velMax = obsInfo.velMax,
-                validPixels = validPixels,
-                objectInfo = objectLabel,
-                saveFile= contFitPdfName,
-                nComps=nComps)
 
+    if arcsec != '1arc':
+        # -------------------------- #
+        # Plot the fitted continuum. #
+        # -------------------------- #
+        contFitPdfName = contSavePath + objectNameBase + '_contFit.pdf'
+        plotSpectra(data = data,
+                    contFlux = contFluxesMasked,
+                    maskedData = profileMask['maskedData'],
+                    xarr = vels,
+                    velMin = obsInfo.velMin,
+                    velMax = obsInfo.velMax,
+                    validPixels = validPixels,
+                    objectInfo = objectLabel,
+                    saveFile= contFitPdfName,
+                    nComps=nComps)
 
-    # --------------------------------------- #
-    # Plot the fitted gaussian components and #
-    # the continuum-subtracted spectrum.      #
-    # --------------------------------------- #
-    contSubPdfName = contSavePath + objectNameBase + '_contSub.pdf'
-    plotSpectra(data = contSubCube,
-                xarr= vels,
-                velMin = obsInfo.velMin,
-                velMax = obsInfo.velMax,
-                gauss1 = comp1,
-                gauss2 = comp2,
-                gauss3 = comp3,
-                validPixels = validPixels,
-                v16 = velDict['v16']['image'],
-                v50 = velDict['v50']['image'],
-                v84 = velDict['v84']['image'],
-                objectInfo = objectLabel,
-                saveFile = contSubPdfName,
-                nComps = nComps)
+        # --------------------------------------- #
+        # Plot the fitted gaussian components and #
+        # the continuum-subtracted spectrum.      #
+        # --------------------------------------- #
+        contSubPdfName = contSavePath + objectNameBase + '_contSub.pdf'
+        plotSpectra(data = contSubCube,
+                    xarr= vels,
+                    velMin = obsInfo.velMin,
+                    velMax = obsInfo.velMax,
+                    gauss1 = comp1,
+                    gauss2 = comp2,
+                    gauss3 = comp3,
+                    validPixels = validPixels,
+                    v16 = velDict['v16']['image'],
+                    v50 = velDict['v50']['image'],
+                    v84 = velDict['v84']['image'],
+                    objectInfo = objectLabel,
+                    saveFile = contSubPdfName,
+                    nComps = nComps)
 
 
     # ---------------------------------------- #
@@ -412,26 +467,16 @@ for x in range(len(paramFileData)):
     # ---------------------------------------- #
     w = WCS(obsInfo.originalHdu['image'].header).celestial
 
-    mapPdfName = (mapSavePath + objectNameBase +
-                  '_' + propertyDict[key]['prefix'] + '_map.pdf')
+    mapPdfName = (mapSavePath + objectNameBase + '_propertyMaps.pdf')
     plotMultiMap(propertyDict = propertyDict,
                  objectName = obsInfo.objectName,
                  centerRa = obsInfo.raCenter,
                  centerDec = obsInfo.decCenter,
-                 objectInfo = objectLabel,
+                 objectInfo = objectLabel, 
                  saveFileName = mapPdfName,
                  numColsRows = (4,2),
                  wcs = w,
                  minMax = wcsMinMax)
 
-
     print obsInfo.objectName,lineName
-
-
-
-
-
-
-
-
 
