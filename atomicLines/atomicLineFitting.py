@@ -49,8 +49,6 @@ from ObsInfo import ObsInfo
 
 # Size of the interpolated spaxels
 arcsec = '1arc'
-# Number of Gaussian components to fit to the line profile.
-nComps = 2
 
 topDir = '/Volumes/QbertPrimary/umdResearch/adapProposalNearby/'
 
@@ -86,7 +84,9 @@ for x in range(len(paramFileData)):
 
     # Order of the polynomial to be fit to the continuum.
     polyorder = obsInfo.polyorder
-
+    # Number of Gaussian components to fit to the line profile.
+    if obsInfo.objectName == 'ngc1068': nComps = 3
+    else: nComps = 2
 
     # ---------------------------------- #
     # Directory and Labeling Name Bases  #
@@ -224,8 +224,8 @@ for x in range(len(paramFileData)):
                         vels = vels,
                         validPixels = validPixels,
                         objectName = obsInfo.objectName,
-                        minIdx = obsInfo.minProfIdx,
-                        maxIdx = obsInfo.maxProfIdx)
+                        minIdx = minProfIdx,
+                        maxIdx = maxProfIdx)
     guessCube,gaussAmp = gc[0],gc[1]
 
 
@@ -325,8 +325,8 @@ for x in range(len(paramFileData)):
     # -------------------------------- #
     instrSigma = lineDict[lineName]['specRes'] / 2.355
     
-    w1Corr = np.sqrt(np.square(w1)-np.square(instrSigma))
-    w2Corr = np.sqrt(np.square(w2)-np.square(instrSigma * 2.))
+    w1Corr = np.sqrt(np.square(w1)-np.square(instrSigma * 2.))
+    w2Corr = np.sqrt(np.square(w2)-np.square(instrSigma * 4.))
 
 
     # ----------------------------- #
@@ -412,9 +412,9 @@ for x in range(len(paramFileData)):
     # Append an image HDU of the fitted gaussian parameters
     createHdu(pyCube.parcube,fitsHdu,'gaussParam')
     # Append fitted emission line model.
-    createHdu(np.ma.filled(modelFluxes,0),fitsHdu, 'modelFluxes')
+    createHdu(np.ma.filled(modelFluxes,0),fitsHdu, 'modTotalFluxes')
     # Append an image HDU of the continuum-subtracted fluxes.
-    createHdu(np.ma.filled(contSubCube,0),fitsHdu, 'contSubCube')
+    createHdu(np.ma.filled(contSubCube,0),fitsHdu, 'contSubFluxes')
     # Append an image HDU of fitted continuum fluxes.
     createHdu(np.ma.filled(contFluxesMasked,0),fitsHdu, 'fittedContFluxes')
     # Append the cropped redshift corrected velocities.
