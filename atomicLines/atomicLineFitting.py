@@ -48,7 +48,7 @@ from ObsInfo import ObsInfo
 
 
 # Size of the interpolated spaxels
-arcsec = '1arc'
+arcsec = '6arc'
 
 topDir = '/Volumes/QbertPrimary/umdResearch/adapProposalNearby/'
 
@@ -259,28 +259,6 @@ for x in range(len(paramFileData)):
                          nComps=nComps)
 
 
-    # -------------------------------------------------------------- #
-    # Compute the discrete fluxes of the fitted gaussian components. #
-    # -------------------------------------------------------------- #
-    comp1 = calcGaussFluxes(gaussParams = pyCube.parcube[0:3,:,:],
-                            validPixels = validPixels,
-                            velMin = obsInfo.velMin,
-                            velMax = obsInfo.velMax)
-    comp2 = calcGaussFluxes(gaussParams = pyCube.parcube[3:6,:,:],
-                            validPixels = validPixels,
-                            velMin = obsInfo.velMin,
-                            velMax = obsInfo.velMax)
-    if nComps == 3:
-        comp3 = calcGaussFluxes(gaussParams = pyCube.parcube[6:9,:,:],
-                                validPixels = validPixels,
-                                velMin = obsInfo.velMin,
-                                velMax = obsInfo.velMax)
-        modelFluxes = comp1 + comp2 + comp3
-    else:
-        comp3 = None
-        modelFluxes = comp1 + comp2
-
-
     # ------------------------------------------------------------- #
     # Compute the total integrated flux of the fitted line profile. #
     # ------------------------------------------------------------- #
@@ -332,37 +310,22 @@ for x in range(len(paramFileData)):
     # ----------------------------- #
     # Jankie way to compute errors. #
     # ----------------------------- #
-    from functionThings import gaussFunc
-
-    # Empty array which will hold the fluxes.
-    gaussFluxes1 = np.zeros((len(vels),nCols,nRows))
-    # Compute the fluxes only for pixels which are valid.
-    for coord in validPixels:
-        col,row = coord[0], coord[1]
-        for ii in range(len(vels)):
-            gaussFluxes1[ii,col,row] = gaussFunc(vels[ii],pyCube.parcube[0:3,col,row])
-
-    # Empty array which will hold the fluxes.
-    gaussFluxes2 = np.zeros((len(vels),nCols,nRows))
-    # Compute the fluxes only for pixels which are valid.
-    for coord in validPixels:
-        col,row = coord[0], coord[1]
-        for ii in range(len(vels)):
-            gaussFluxes2[ii,col,row] = gaussFunc(vels[ii],pyCube.parcube[3:6,col,row])
-
+    comp1 = calcGaussFluxes(gaussParams = pyCube.parcube[0:3,:,:],
+                            validPixels = validPixels,
+                            velArr = vels)
+    comp2 = calcGaussFluxes(gaussParams = pyCube.parcube[3:6,:,:],
+                            validPixels = validPixels,
+                            velArr = vels)
     if nComps == 3:
-        # Empty array which will hold the fluxes.
-        gaussFluxes3 = np.zeros((len(vels),nCols,nRows))
-        # Compute the fluxes only for pixels which are valid.
-        for coord in validPixels:
-            col,row = coord[0], coord[1]
-            for ii in range(len(vels)):
-                gaussFluxes3[ii,col,row] = gaussFunc(vels[ii],pyCube.parcube[6:9,col,row])
-        gaussSums = gaussFluxes1 + gaussFluxes2 +gaussFluxes3
+        comp3 = calcGaussFluxes(gaussParams = pyCube.parcube[6:9,:,:],
+                                validPixels = validPixels,
+                                velArr = vels)
+        modelFluxes = comp1 + comp2 + comp3
     else:
-        gaussSums = gaussFluxes1 + gaussFluxes2
+        comp3 = None
+        modelFluxes = comp1 + comp2
 
-    res = gaussSums - contSubCube
+    res =  contSubCube - modelFluxes
     meanAbsErr = np.sum(np.abs(res), axis=0) / len(vels)
     rms = np.sqrt( np.sum(res**2., axis=0) / len(vels) )
 
@@ -483,4 +446,4 @@ for x in range(len(paramFileData)):
                  minMax = wcsMinMax)
 
     print obsInfo.objectName,lineName
-    #break
+    break
