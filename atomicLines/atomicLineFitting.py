@@ -363,7 +363,7 @@ for x in range(len(paramFileData)):
         gaussSums = gaussFluxes1 + gaussFluxes2
 
     res = gaussSums - contSubCube
-    aveErr = sum( res / len(vels) )
+    meanAbsErr = np.sum(np.abs(res), axis=0) / len(vels)
     rms = np.sqrt( np.sum(res**2., axis=0) / len(vels) )
 
 
@@ -397,7 +397,11 @@ for x in range(len(paramFileData)):
                     'rms':  {'image':rms,
                              'prefix':'rms',
                              'unit': r'Jy km s$^{-1}$',
-                             'subPlotId': 7}
+                             'subPlotId': 7},
+                    'meanAbsErr':  {'image':meanAbsErr,
+                             'prefix':'meanAbsErr',
+                             'unit': r'Jy km s$^{-1}$',
+                             'subPlotId': 8}
                    }
 
 
@@ -479,4 +483,4 @@ for x in range(len(paramFileData)):
                  minMax = wcsMinMax)
 
     print obsInfo.objectName,lineName
-
+    #break

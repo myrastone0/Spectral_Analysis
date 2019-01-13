@@ -145,6 +145,7 @@ class ObsInfo():
             self.velRef = self.velsCorr[self.minIdx]
         if velCorr == False:
             self.velRef = self.vels[self.minIdx]
+            #self.velRef = self.originalHdu['zCorrVels'].data[0]
 
 
     def cropData():
@@ -179,7 +180,7 @@ class ObsInfo():
         self.originalHdu = fits.open(fitsFile)
 
         # Grab the data and convert to float32
-        self.data = self.originalHdu['contSubCube'].data.astype('>f4')
+        self.data = self.originalHdu['contSubFluxes'].data.astype('>f4')
 
         # Convert bad pixel values to zero.
         self.data[self.data == -9999.] = 0
