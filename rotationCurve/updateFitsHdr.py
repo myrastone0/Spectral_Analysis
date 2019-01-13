@@ -96,7 +96,7 @@ for x in range(len(paramFileData)):
     # Update/add spectral axis keywords in the FITS header. #
     # Also add beamsize information.                        #
     # ----------------------------------------------------- #
-    fitsSavePath = objectPathBase + 'modelInFits/'
+    fitsSavePath = objectPathBase + 'inFits/'
     if (not os.path.exists(fitsSavePath)):os.makedirs(fitsSavePath)
     
     fitsSaveName = fitsSavePath+objectNameBase+'_hdrEditVel.fits'
@@ -125,18 +125,20 @@ for x in range(len(paramFileData)):
                       'OUTFOLDER   ' + objectPathBase + lineName + '/\n'+
                       '{0:<10s}'.format('THREADS') + '{0:<8s}'.format('4') +'\n'+
                       '{0:<10s}'.format('BEAMFWHM') + '{0:<8s}'.format(str(spatRes)) +'\n'+
-                      '{0:<10s}'.format('3DFIT') + '{0:<8s}'.format('TRUE') +'\n'+
-                      '{0:<10s}'.format('NRADII') + '{0:<8s}'.format('10') +'\n'+
-                      '{0:<10s}'.format('RADSEP') + '{0:<8s}'.format('2') +'\n'+
+                      '{0:<10s}'.format('GALFIT') + '{0:<8s}'.format('TRUE') +'\n'+
+                      '{0:<10s}'.format('NRADII') + '{0:<8s}'.format('5') +'\n'+
+                      '{0:<10s}'.format('RADSEP') + '{0:<8s}'.format('4') +'\n'+
                       '{0:<10s}'.format('VSYS') + '{0:<8s}'.format(str(vSys)) +'\n'+
                       '{0:<10s}'.format('XPOS') + '{0:<8s}'.format(str(int(xPos))) +'\n'+
                       '{0:<10s}'.format('YPOS') + '{0:<8s}'.format(str(int(yPos))) +'\n'+
                       '{0:<10s}'.format('VROT') + '{0:<8s}'.format('60') +'\n'+
                       '{0:<10s}'.format('VDISP') + '{0:<8s}'.format('100') +'\n'+
                       '{0:<10s}'.format('INC') + '{0:<8s}'.format(str(obsInfo.inc)) +'\n'+
+                      '{0:<10s}'.format('DELTAINC') + '{0:<8s}'.format('15') +'\n'+
                       '{0:<10s}'.format('PA') + '{0:<8s}'.format(str(obsInfo.majorPA)) +'\n'+
+                      '{0:<10s}'.format('DELTAPA') + '{0:<8s}'.format('15') +'\n'+
                       '{0:<10s}'.format('Z0') + '{0:<8s}'.format('.5') +'\n'+
-                      '{0:<10s}'.format('FREE') + '{0:<8s}'.format('VROT VDISP') +'\n'+
+                      '{0:<10s}'.format('FREE') + '{0:<8s}'.format('VROT VDISP INC PA') +'\n'+
                       '{0:<10s}'.format('NORM') + '{0:<8s}'.format('LOCAL') +'\n'+
                       '{0:<10s}'.format('MASK') + '{0:<8s}'.format('NONE') +'\n'+
                       '{0:<10s}'.format('LTYPE') + '{0:<8s}'.format('2') +'\n'+
@@ -144,7 +146,8 @@ for x in range(len(paramFileData)):
                       '{0:<10s}'.format('DISTANCE') + '{0:<8s}'.format(str(obsInfo.distance)) +'\n'+
                       '{0:<10s}'.format('BWEIGHT') + '{0:<8s}'.format('1') +'\n'+
                       '{0:<10s}'.format('WFUNC') + '{0:<8s}'.format('2') +'\n'+
-                      '{0:<10s}'.format('LINEAR') + '{0:<8s}'.format('1.699') +'\n'+              
+                      '{0:<10s}'.format('LINEAR') + '{0:<8s}'.format('1.699') +'\n'+  
+                      '{0:<10s}'.format('TWOSTAGE') + '{0:<8s}'.format('TRUE') +'\n'+  
                       '\n')
         outFile.close()
 
