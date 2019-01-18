@@ -38,7 +38,7 @@ from fitsThings import buildWcs, createHdu
 from maskThings import maskTrue, maskFalse, maskProfile
 from getContinuumFlux import getContinuumFlux
 from pixelThings import findValidPixels, pixMinMax
-from intialGuessThings import buildGuessCube
+from initialGuessThings import buildGuessCube
 from fluxThings import calcGaussFluxes, calcTotIntFluxes
 from velocityThings import calcVel, calcVelWidth
 from lineFittingThings import parallelFit
