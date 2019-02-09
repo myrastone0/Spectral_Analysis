@@ -6,15 +6,9 @@
     Create an instance of ObsInfo using data and parameters from a single Herschel
     observation. 
 
-    Fit a polynomial to a spectral continuum.
-
-    Fit a line profile with 2 (or 3, if NGC 1068) Gaussian components.
-
     Measure line profile properties from the fits.
     
     Correct widths at 1 and 2 sigma for instrumental resolution.
-
-    Plot the continuum fits.
 
     Plot the line profile properties as colormaps.
 """
