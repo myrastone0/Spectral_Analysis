@@ -3,11 +3,11 @@
 
     This is a script which utilizes the ObsInfo class.
 
-    Create an instance of ObsInfo using data and parameters from a single Herschel
-    observation. 
+    Create an instance of ObsInfo using data and parameters
+    from a single Herschel observation.
 
     Measure line profile properties from the fits.
-    
+
     Correct widths at 1 and 2 sigma for instrumental resolution.
 
     Plot the line profile properties as colormaps.
@@ -43,10 +43,10 @@ from lineFittingThings import parallelFit
 from dictionaryThings import loadDict
 from ObsInfo import ObsInfo
 
-out = 'modOut0'
-# Size of the interpolated spaxels
-arcsec = '3arc'
 
+out = 'modOut3'
+# Size of the interpolated spaxels
+arcsec = '1arc'
 topDir = '/Volumes/QbertPrimary/umdResearch/adapProposalNearby/'
 
 
@@ -65,7 +65,7 @@ paramFileName = topDir + 'fittingParametersV4.txt'
 # Read in the parameter file containing line profile #
 # velocity limits and continuum fitting information. #
 # -------------------------------------------------- #
-paramFileData = np.genfromtxt(paramFileName, dtype = None, 
+paramFileData = np.genfromtxt(paramFileName, dtype = None,
                               autostrip = True, names = True, encoding=None)
 
 
@@ -74,7 +74,7 @@ for x in range(len(paramFileData)):
     # Get the galaxy and line information. #
     # ------------------------------------ #
     obsInfo = ObsInfo(x, paramFileName, objDictName)
-    
+
     # Name of the emission line.
     lineName = paramFileData['lineNameShort'][x]
     # Rest wavelength of the emission line.
@@ -83,8 +83,7 @@ for x in range(len(paramFileData)):
     # Order of the polynomial to be fit to the continuum.
     polyorder = obsInfo.polyorder
     # Number of Gaussian components to fit to the line profile.
-    nComps = 1
-
+    nComps=1
 
     # ---------------------------------- #
     # Directory and Labeling Name Bases  #
@@ -94,8 +93,9 @@ for x in range(len(paramFileData)):
                    +lineDict[lineName]['texLabel'])
     # Base for the object's file names.
     objectNameBase = (str(obsInfo.obsId)+'_'+obsInfo.objectName+'_'+lineName)
-    # Base path to the object's directories.    
-    objectPathBase = (topDir + 'pySpecKitCube/run4/' + obsInfo.objectName + '/' + arcsec + '/barModFitting/')
+    # Base path to the object's directories.
+    objectPathBase = (topDir + 'pySpecKitCube/run4/' + obsInfo.objectName + '/' +
+                      arcsec + '/3dBarolo/'+lineName+'/'+out+'/')
     if (not os.path.exists(objectPathBase)):os.makedirs(objectPathBase)
 
 
@@ -104,13 +104,13 @@ for x in range(len(paramFileData)):
     # --------------------------------- #
     # Continuum plots
     if arcsec != '1arc':
-        contSavePath = objectPathBase + 'contPlots/'
+        contSavePath = objectPathBase + 'barModLineFitting/contPlots/'
         if (not os.path.exists(contSavePath)):os.makedirs(contSavePath)
     # Line Property Maps
-    mapSavePath = objectPathBase + 'propertyMaps/'
+    mapSavePath = objectPathBase + 'barModLineFitting/propertyMaps/'
     if (not os.path.exists(mapSavePath)):os.makedirs(mapSavePath)
     # Output FITS files
-    fitsSavePath = objectPathBase + 'outFitsFiles/'
+    fitsSavePath = objectPathBase + 'barModLineFitting/outFitsFiles/'
     if (not os.path.exists(fitsSavePath)):os.makedirs(fitsSavePath)
 
 
@@ -121,8 +121,8 @@ for x in range(len(paramFileData)):
                 +lineName+'/'+out+'/'+obsInfo.objectName+'mod_local.fits')
     fitsHdu = fits.open(fitsFile)
     data = fitsHdu[0].data
-    
-    
+
+
     # Get the velocities from the original data file.
     originalFits = (topDir+'pySpecKitCube/run4/'+obsInfo.objectName+'/'
                     +arcsec+'/outFitsFiles2/'+objectNameBase+'.fits')
@@ -132,16 +132,17 @@ for x in range(len(paramFileData)):
 
     # Number of rows, columns, and fluxes in the cropped 3D data array.
     nRows,nCols,nFluxes = data.shape[2], data.shape[1], data.shape[0]
-    
+
     minProfIdx = (np.abs(vels - (obsInfo.profileMin))).argmin()
     maxProfIdx = (np.abs(vels - (obsInfo.profileMax))).argmin()
+
 
     # ------------- #
     # Build the WCS #
     # ------------- #
     # The spectral axis is corrected for redshift in buildWcs function.
     pacsWcs=buildWcs(file=originalFits, restWave=restWave, z=obsInfo.z)
-    
+
 
     # ---------------- #
     # Build the masks. #
@@ -158,24 +159,23 @@ for x in range(len(paramFileData)):
     # NaNs are FALSE.
     cubeMask = BooleanArrayMask(np.ma.getmask(falseMask),pacsWcs)
 
-    
-    # if nFluxes > 400:
-    #     mid = 200
-    # else:
-    #     mid = 100
-    
-    mid=150
+    if nFluxes > 350:
+        mid = 200
+    else:
+        mid = 100
+
 
     # Make an array of coordinates for the valid spaxels
     validPixels = findValidPixels((nCols,nRows),np.ma.getmask(trueMask[mid,:,:]))
-    
-    
+
+
     # --------------------------------------------------- #
     # Find the (col,row) min/max limits of valid spaxels. #
     # Min/max will be used to crop the data and the WCS.  #
     # --------------------------------------------------- #
     wcsMinMax = pixMinMax(validPixels)
-    
+
+
     # --------------------------------------------- #
     # Build the spectral cube using the contSubCube #
     # --------------------------------------------- #
@@ -185,14 +185,15 @@ for x in range(len(paramFileData)):
     # For convenience, convert the X-axis to km/s
     # (WCSLIB automatically converts to m/s even if you give it km/s)
     specCube = specCube.with_spectral_unit(u.km/u.s)
-    
+
+
     # --------------------------------------------- #
     # Build the pySpecCube using the spectral cube. #
     # --------------------------------------------- #
     # NaN values are FALSE in the mask.
     pyCube = pyspeckit.Cube(cube=specCube,maskmap=np.ma.getmask(falseMask[mid,:,:]))
-    
-    
+
+
     # -------------------------------- #
     # Set up for line profile fitting. #
     # -------------------------------- #
@@ -222,11 +223,11 @@ for x in range(len(paramFileData)):
     # Enforce the min/max parameter limits?
     minLimits = [T,T,T]*nComps
     maxLimits = [F,T,T]*nComps
-    
+
     # Send the guesses to pyCube
     pyCube.parcube = guessCube
-    
-    
+
+
     # ---------------------#
     # Finally, do the fit! #
     # ---------------------#
@@ -237,8 +238,8 @@ for x in range(len(paramFileData)):
                          profileMax=obsInfo.velMax,
                          validPixels=validPixels,
                          nComps=nComps)
-    
-    
+
+
     # ------------------------------------------------------------- #
     # Compute the total integrated flux of the fitted line profile. #
     # ------------------------------------------------------------- #
@@ -248,6 +249,7 @@ for x in range(len(paramFileData)):
                                    velMax = obsInfo.velMax)
     # Mask the updated integral map.
     fluxMasked = np.ma.masked_array(integralMap,~pyCube.maskmap)
+
 
     # -------------------------------------------------- #
     # Compute the velocities of the fitted line profile. #
@@ -276,13 +278,12 @@ for x in range(len(paramFileData)):
     w1,w2,wAsym = widths[0], widths[1], widths[2]
 
 
-
     # -------------------------------- #
     # Correct the 1 and 2 sigma widths #
     # for the instrumental resolution. #
     # -------------------------------- #
     instrSigma = lineDict[lineName]['specRes'] / 2.355
-    
+
     w1Corr = np.sqrt(np.square(w1)-np.square(instrSigma * 2.))
     w2Corr = np.sqrt(np.square(w2)-np.square(instrSigma * 4.))
 
@@ -297,7 +298,7 @@ for x in range(len(paramFileData)):
         comp2 = None
         comp3 = None
         modelFluxes = comp1
-        
+
     if nComps == 2:
         comp1 = calcGaussFluxes(gaussParams = pyCube.parcube[0:3,:,:],
                                 validPixels = validPixels,
@@ -307,7 +308,7 @@ for x in range(len(paramFileData)):
                                 velArr = vels)
         comp3 = None
         modelFluxes = comp1 + comp2
-        
+
     if nComps == 3:
         comp3 = calcGaussFluxes(gaussParams = pyCube.parcube[6:9,:,:],
                                 validPixels = validPixels,
@@ -357,6 +358,7 @@ for x in range(len(paramFileData)):
                              'subPlotId': 8}
                    }
 
+
     # ------------------------------------------ #
     # Append line profile properties to the FITS #
     # HDU list and save to a new FITS file.      #
@@ -396,7 +398,8 @@ for x in range(len(paramFileData)):
                     objectInfo = objectLabel,
                     saveFile = contSubPdfName,
                     nComps = nComps)
-    
+
+
     # ---------------------------------------- #
     # Make color maps of the corrected images. #
     # ---------------------------------------- #
@@ -407,11 +410,11 @@ for x in range(len(paramFileData)):
                  objectName = obsInfo.objectName,
                  centerRa = obsInfo.raCenter,
                  centerDec = obsInfo.decCenter,
-                 objectInfo = objectLabel, 
+                 objectInfo = objectLabel,
                  saveFileName = mapPdfName,
                  numColsRows = (4,2),
                  wcs = w,
                  minMax = wcsMinMax)
 
-    print obsInfo.objectName,lineName
-    #break
+    print obsInfo.objectName,lineName,out
+    break
