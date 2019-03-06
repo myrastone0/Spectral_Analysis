@@ -47,7 +47,7 @@ from dictionaryThings import loadDict
 from ObsInfo import ObsInfo
 
 # Size of the interpolated spaxels
-arcsec = '3arc'
+arcsec = '6arc'
 
 topDir = '/Volumes/QbertPrimary/umdResearch/adapProposalNearby/'
 
